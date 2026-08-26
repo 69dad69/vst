@@ -106,5 +106,10 @@ private:
     int stableCount = 0;
     int dropoutCount = 0;
     int lastPitchWheel = 8192;
+
+    bool hasLastMidiPitch = false;
+    float lastMidiPitch = 0.0f;
+    float pitchMotion = 0.0f;
+    int settledFrames = 0;
 };
 }
