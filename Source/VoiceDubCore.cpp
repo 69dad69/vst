@@ -186,6 +186,10 @@ void VoiceMidiEngine::reset() noexcept
     stableCount = 0;
     dropoutCount = 0;
     lastPitchWheel = 8192;
+    hasLastMidiPitch = false;
+    lastMidiPitch = 0.0f;
+    pitchMotion = 0.0f;
+    settledFrames = 0;
 }
 
 float VoiceMidiEngine::frequencyToMidi (float frequencyHz) noexcept
@@ -211,6 +215,7 @@ void VoiceMidiEngine::emitNoteOffAndCentre (MidiEventBuffer& output) noexcept
     pendingNote = -1;
     stableCount = 0;
     lastPitchWheel = 8192;
+    settledFrames = 0;
 }
 
 void VoiceMidiEngine::process (const PitchResult& result, const MidiEngineConfig& config,
@@ -233,6 +238,7 @@ void VoiceMidiEngine::process (const PitchResult& result, const MidiEngineConfig
         ++dropoutCount;
         pendingNote = -1;
         stableCount = 0;
+        settledFrames = 0;
 
         if (dropoutCount >= releaseNeeded)
             emitNoteOffAndCentre (output);
@@ -243,40 +249,88 @@ void VoiceMidiEngine::process (const PitchResult& result, const MidiEngineConfig
     dropoutCount = 0;
 
     const float midiFloat = frequencyToMidi (result.frequencyHz) + static_cast<float> (transpose);
+
+    if (hasLastMidiPitch)
+    {
+        const float instantMotion = std::abs (midiFloat - lastMidiPitch);
+        pitchMotion = 0.72f * pitchMotion + 0.28f * instantMotion;
+    }
+    else
+    {
+        pitchMotion = 0.0f;
+        hasLastMidiPitch = true;
+    }
+
+    lastMidiPitch = midiFloat;
+
     int candidate = clampValue (0, 127, static_cast<int> (std::lround (midiFloat)));
 
     if (activeNote >= 0 && std::abs (midiFloat - static_cast<float> (activeNote)) < 0.5f + hysteresis)
         candidate = activeNote;
 
-    if (candidate == pendingNote)
-        ++stableCount;
-    else
-    {
-        pendingNote = candidate;
-        stableCount = 1;
-    }
-
     if (activeNote < 0)
     {
+        if (candidate == pendingNote)
+            ++stableCount;
+        else
+        {
+            pendingNote = candidate;
+            stableCount = 1;
+        }
+
         if (stableCount < stabilityNeeded)
             return;
 
         activeChannel = channel;
         activeNote = candidate;
         lastPitchWheel = 8192;
+        settledFrames = 0;
         output.add ({ MidiEventType::pitchBend, activeChannel, 0, 8192, 0.0f });
         output.add ({ MidiEventType::noteOn, activeChannel, activeNote, 0,
                       velocityFromRms (result.rmsDb, config.gateDb) });
     }
-    else if (candidate != activeNote && stableCount >= stabilityNeeded)
+    else if (candidate != activeNote)
     {
-        output.add ({ MidiEventType::noteOff, activeChannel, activeNote, 0, 0.0f });
-        output.add ({ MidiEventType::pitchBend, activeChannel, 0, 8192, 0.0f });
-        activeChannel = channel;
-        activeNote = candidate;
-        lastPitchWheel = 8192;
-        output.add ({ MidiEventType::noteOn, activeChannel, activeNote, 0,
-                      velocityFromRms (result.rmsDb, config.gateDb) });
+        // During a glide, keep the current MIDI note and express the continuous
+        // movement as pitch bend. Only change the base MIDI note after the
+        // detected pitch has actually settled on a new target. This prevents a
+        // C->E vocal slide from generating C#, D and D# note-ons on the way.
+        constexpr float settledMotionThreshold = 0.035f;
+        const int settleNeeded = std::max (2, std::min (5, stabilityNeeded));
+
+        if (pitchMotion <= settledMotionThreshold)
+            ++settledFrames;
+        else
+            settledFrames = 0;
+
+        if (candidate == pendingNote)
+            ++stableCount;
+        else
+        {
+            pendingNote = candidate;
+            stableCount = 1;
+        }
+
+        if (settledFrames >= settleNeeded && stableCount >= stabilityNeeded)
+        {
+            output.add ({ MidiEventType::noteOff, activeChannel, activeNote, 0, 0.0f });
+            output.add ({ MidiEventType::pitchBend, activeChannel, 0, 8192, 0.0f });
+            activeChannel = channel;
+            activeNote = candidate;
+            lastPitchWheel = 8192;
+            pendingNote = activeNote;
+            stableCount = 0;
+            settledFrames = 0;
+            pitchMotion = 0.0f;
+            output.add ({ MidiEventType::noteOn, activeChannel, activeNote, 0,
+                          velocityFromRms (result.rmsDb, config.gateDb) });
+        }
+    }
+    else
+    {
+        pendingNote = activeNote;
+        stableCount = 0;
+        settledFrames = 0;
     }
 
     if (activeNote < 0)
