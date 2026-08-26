@@ -18,6 +18,11 @@ void expect (bool condition, const std::string& message)
     }
 }
 
+float midiToHz (float midi)
+{
+    return 440.0f * std::pow (2.0f, (midi - 69.0f) / 12.0f);
+}
+
 voicedub::PitchResult detectSine (double sampleRate, float hz, float amplitude,
                                   float minHz = 55.0f, float maxHz = 1200.0f,
                                   float gateDb = -60.0f, float confidence = 0.60f)
@@ -91,6 +96,50 @@ void testMidiEngineLifecycle()
     expect (engine.getActiveNote() < 0, "release threshold should send note off");
 }
 
+void testGlideDoesNotCreateChromaticSteps()
+{
+    voicedub::VoiceMidiEngine engine;
+    voicedub::MidiEngineConfig config;
+    config.stabilityFrames = 3;
+    config.bendRangeSemitones = 8;
+    config.noteHysteresisSemitones = 0.18f;
+
+    voicedub::PitchResult pitch;
+    pitch.valid = true;
+    pitch.confidence = 0.95f;
+    pitch.rmsDb = -18.0f;
+
+    voicedub::MidiEventBuffer events;
+
+    pitch.frequencyHz = midiToHz (60.0f);
+    for (int i = 0; i < 4; ++i)
+        engine.process (pitch, config, events);
+
+    expect (engine.getActiveNote() == 60, "glide test should start on MIDI note 60");
+
+    int intermediateNoteOns = 0;
+    for (float midi = 60.15f; midi <= 64.0f; midi += 0.15f)
+    {
+        pitch.frequencyHz = midiToHz (midi);
+        engine.process (pitch, config, events);
+
+        for (std::size_t i = 0; i < events.size(); ++i)
+            if (events[i].type == voicedub::MidiEventType::noteOn
+                && events[i].note != 64)
+                ++intermediateNoteOns;
+    }
+
+    expect (intermediateNoteOns == 0,
+            "continuous C-to-E glide must not create intermediate chromatic note-ons");
+
+    pitch.frequencyHz = midiToHz (64.0f);
+    for (int i = 0; i < 24 && engine.getActiveNote() != 64; ++i)
+        engine.process (pitch, config, events);
+
+    expect (engine.getActiveNote() == 64,
+            "after the glide settles, the engine should switch directly to the final E note");
+}
+
 void testChannelChangeSafety()
 {
     voicedub::VoiceMidiEngine engine;
@@ -123,6 +172,7 @@ int main()
 {
     testPitchTracker();
     testMidiEngineLifecycle();
+    testGlideDoesNotCreateChromaticSteps();
     testChannelChangeSafety();
 
     if (failures != 0)
