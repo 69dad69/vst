@@ -7,9 +7,16 @@ Verified locally in the development container:
 - VoiceDubCore and VoiceDubCoreTests compile with GCC 14.2.0 in Release mode.
 - All standalone core tests pass.
 
-CI verification:
-- Linux core tests run on every pull request.
-- Windows x64 builds VoiceDubCoreTests and the VST3 target using Visual Studio on GitHub Actions.
-- A successful Windows job uploads the complete VoiceDub.vst3 bundle as an Actions artifact.
+Verified on GitHub Actions, Windows x64:
+- CMake configuration succeeds with JUCE.
+- VoiceDubCoreTests and VoiceDub_VST3 compile successfully with Visual Studio.
+- Windows core tests pass.
+- The complete VoiceDub.vst3 bundle uploads successfully as artifact VoiceDub-Windows-x64-VST3.
+- Successful workflow run: 32991287674.
+- Artifact SHA-256: 42a5258219a078c1410ed44393511a21cd4bccc090164d578e5c5055ddbc0546.
+
+Verified artifact contents:
+- Contents/x86_64-win/VoiceDub.vst3 (6,452,736 bytes)
+- Contents/Resources/moduleinfo.json
 
 The VST3 wrapper uses JUCE pinned to commit e18f7f506c0b96f2c738a0bcd7fe6467a5005ad8. JUCE is fetched by CMake unless VOICEDUB_JUCE_PATH or JUCE_PATH points to a local JUCE source tree.
