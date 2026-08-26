@@ -1,0 +1,39 @@
+name: Build VoiceDub VST3
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core-tests:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure core tests
+        run: cmake --preset core-tests
+      - name: Build core tests
+        run: cmake --build --preset core-tests
+      - name: Run core tests
+        run: ctest --preset core-tests
+
+  windows-vst3:
+    name: VST3 (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DVOICEDUB_BUILD_PLUGIN=ON -DVOICEDUB_BUILD_TESTS=ON
+      - name: Build core tests and VST3
+        run: cmake --build build --config Release --target VoiceDubCoreTests VoiceDub_VST3
+      - name: Run core tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoiceDub-Windows-x64-VST3
+          path: build/VoiceDub_artefacts/Release/VST3/VoiceDub.vst3
+          if-no-files-found: error
