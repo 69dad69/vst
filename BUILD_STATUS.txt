@@ -8,7 +8,7 @@ Verified locally in the development container:
 - All standalone core tests pass.
 
 CI verification:
-- Linux core tests run on every pull request and push to main.
+- Linux core tests run on every pull request.
 - Windows x64 builds VoiceDubCoreTests and the VST3 target using Visual Studio on GitHub Actions.
 - A successful Windows job uploads the complete VoiceDub.vst3 bundle as an Actions artifact.
 
