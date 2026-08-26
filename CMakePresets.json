@@ -1,0 +1,50 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "core-tests",
+      "displayName": "VoiceDub core tests (offline)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/core-tests",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VOICEDUB_BUILD_PLUGIN": "OFF",
+        "VOICEDUB_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "vst3-release",
+      "displayName": "VoiceDub VST3 Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/vst3-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VOICEDUB_BUILD_PLUGIN": "ON",
+        "VOICEDUB_BUILD_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "core-tests",
+      "configurePreset": "core-tests"
+    },
+    {
+      "name": "vst3-release",
+      "configurePreset": "vst3-release",
+      "targets": ["VoiceDub_VST3"]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "core-tests",
+      "configurePreset": "core-tests",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

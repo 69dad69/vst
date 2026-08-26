@@ -1,0 +1,15 @@
+VoiceDub VST3 build status
+===========================
+Version: 0.3.0
+
+Verified locally in the development container:
+- CMake configure for the standalone core succeeds.
+- VoiceDubCore and VoiceDubCoreTests compile with GCC 14.2.0 in Release mode.
+- All standalone core tests pass.
+
+CI verification:
+- Linux core tests run on every pull request and push to main.
+- Windows x64 builds VoiceDubCoreTests and the VST3 target using Visual Studio on GitHub Actions.
+- A successful Windows job uploads the complete VoiceDub.vst3 bundle as an Actions artifact.
+
+The VST3 wrapper uses JUCE pinned to commit e18f7f506c0b96f2c738a0bcd7fe6467a5005ad8. JUCE is fetched by CMake unless VOICEDUB_JUCE_PATH or JUCE_PATH points to a local JUCE source tree.
