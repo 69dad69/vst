@@ -1,0 +1,19 @@
+VoiceDub build status — 2026-08-26
+
+Project version: 0.2.0
+
+Verified locally in this environment:
+- CMake 3.31.6 configuration for the standalone core succeeds.
+- GCC 14.2.0 compiles VoiceDubCore and VoiceDubCoreTests successfully in Release mode.
+- All standalone core tests pass.
+- AddressSanitizer + UndefinedBehaviorSanitizer Debug build compiles and all tests pass.
+- VST3 configuration was attempted with the pinned JUCE 9.0.1 commit.
+
+VST3 blocker in this environment:
+CMake reaches JUCE FetchContent and then cannot resolve github.com. The failure happens before JUCE is available, so the VST3 wrapper compiler is not invoked here. This is an environment/network restriction, not a failing VoiceDub core build.
+
+To continue without network access, place a JUCE source checkout on disk and run:
+cmake -S . -B build -DVOICEDUB_JUCE_PATH=/path/to/JUCE -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target VoiceDub_VST3 -j
+
+On Windows with Visual Studio 2022, build-windows.bat performs configure, core build/tests and VST3 build.

@@ -1,0 +1,5 @@
+C:/Users/DAD/Downloads/VoiceDub_VST3_0.2_ready_to_compile (1)/build/core-tests/CMakeFiles/VoiceDubCore.dir
+C:/Users/DAD/Downloads/VoiceDub_VST3_0.2_ready_to_compile (1)/build/core-tests/CMakeFiles/VoiceDubCoreTests.dir
+C:/Users/DAD/Downloads/VoiceDub_VST3_0.2_ready_to_compile (1)/build/core-tests/CMakeFiles/test.dir
+C:/Users/DAD/Downloads/VoiceDub_VST3_0.2_ready_to_compile (1)/build/core-tests/CMakeFiles/edit_cache.dir
+C:/Users/DAD/Downloads/VoiceDub_VST3_0.2_ready_to_compile (1)/build/core-tests/CMakeFiles/rebuild_cache.dir
